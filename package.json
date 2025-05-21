@@ -1,0 +1,20 @@
+{
+  "name": "moleculer-mcp",
+  "version": "1.0.0",
+  "description": "MCP server to expose (Moleculer.js)[https://github.com/moleculerjs/moleculer] actions as tools.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node dist/index.js",
+    "build": "tsc"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.11.4",
+    "moleculer": "^0.14.35",
+    "nats": "^2.29.3"
+  }
+}
