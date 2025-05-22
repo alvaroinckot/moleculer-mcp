@@ -1,3 +1,6 @@
 # moleculer-mcp
 
-MCP server to expose (Moleculer.js)[https://github.com/moleculerjs/moleculer] actions as tools.
+```bash
+docker build -t mcp-server .
+docker run --network host mcp-server
+```
