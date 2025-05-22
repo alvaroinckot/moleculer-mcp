@@ -103,6 +103,7 @@ async function main() {
   const broker = new ServiceBroker({
     nodeID: "mcp-bridge",
     transporter: "NATS",
+    logLevel: "error"
   });
 
   const app = express();
@@ -211,9 +212,6 @@ async function main() {
       }
     }
     requiredKeysMap[safeName] = requiredKeys;
-    
-    // Log the mapping and required keys
-    console.log({ safeName, originalName, requiredKeys });
   });
   
   // Handle MCP requests at root path as well as v1/mcp for better compatibility
@@ -229,19 +227,20 @@ async function main() {
       for (const [safeName, originalName] of Object.entries(nameMap)) {
         const toolDescription = generateToolDescription(originalName);
         const zodSchemaShape = actionSchemaShapes[safeName];
+        
+        // Register tool with simpler approach - remove structuredContent to avoid errors
         server.tool(
-          safeName,
-          toolDescription,
-          // Pass the raw schema shape directly, not a Zod object
-          zodSchemaShape,
-          async (args, extra) => {
+          safeName, 
+          toolDescription, 
+          zodSchemaShape, 
+          async (args) => {
             try {
               // Forward request to Moleculer using the original action name
               console.log(`MCP tool '${safeName}' calling action '${originalName}' with args:`, args);
               const result = await broker.call(originalName, args);
-              // Return the result in the format expected by MCP
+              
+              // Only return content, no structuredContent to avoid the error
               return {
-                structuredContent: { result },
                 content: [{ type: "text", text: JSON.stringify(result) }]
               };
             } catch (error) {
