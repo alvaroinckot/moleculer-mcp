@@ -2,7 +2,7 @@
 
 > A Model Context Protocol (MCP) server that exposes [Moleculer.js](https://github.com/moleculerjs/moleculer) actions as AI tools.
 
-[![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
+![Moleculer MCP in action.](docs/image.png)
 
 ## 📋 Overview
 
