@@ -1,0 +1,50 @@
+{
+    "allow": [
+        "*",
+        "posts.*",
+        "users.list"
+    ],
+    "tools": [
+        {
+            "name": "get_node_actions",
+            "action": "$node.actions",
+            "description": "List all moleculer actions available",
+            "params": {
+                "onlyAvailable": true
+            }
+        },
+        {
+            "name": "get_node_events",
+            "action": "$node.events",
+            "description": "List all moleculer events available",
+            "params": {
+                "onlyAvailable": true
+            }
+        },
+        {
+            "name": "get_node_services",
+            "action": "$node.services",
+            "description": "List all moleculer services available"
+        },
+        {
+            "name": "get_node_health",
+            "action": "$node.health",
+            "description": "Get the health status of the node"
+        },
+        {
+            "name": "get_node_list",
+            "action": "$node.list",
+            "description": "List all nodes in the cluster"
+        },
+        {
+            "name": "get_node_metrics",
+            "action": "$node.metrics",
+            "description": "List all node metrics"
+        },
+        {
+            "name": "get_node_options",
+            "action": "$node.options",
+            "description": "List all node options"
+        }
+    ]
+}

@@ -5,6 +5,8 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { z } from "zod";
 import express from "express";
 import { Request, Response } from "express";
+import * as fs from "fs";
+import * as path from "path";
 
 // Type definitions to work with Moleculer actions and validation schemas
 interface ActionInfo {
@@ -13,6 +15,43 @@ interface ActionInfo {
   definition?: {
     params?: Record<string, any>;
   };
+}
+
+// Settings configuration interfaces
+interface CustomTool {
+  name: string;
+  action: string;
+  description: string;
+  params?: Record<string, any>; // Override default parameters
+}
+
+interface BridgeSettings {
+  allow?: string[];
+  tools?: CustomTool[];
+}
+
+// Default settings - allow all actions if no settings provided
+const DEFAULT_SETTINGS: BridgeSettings = {
+  allow: ['*'],
+  tools: []
+};
+
+// Utility function to check if an action is allowed based on patterns
+function isActionAllowed(actionName: string, allowPatterns: string[]): boolean {
+  return allowPatterns.some(pattern => {
+    if (pattern === '*') {
+      return true;
+    }
+    
+    if (pattern.endsWith('*')) {
+      // Wildcard pattern like "posts.*"
+      const prefix = pattern.slice(0, -1);
+      return actionName.startsWith(prefix);
+    }
+    
+    // Exact match
+    return actionName === pattern;
+  });
 }
 
 // Utility function to convert Fastest-Validator schema to Zod schema properties
@@ -98,7 +137,55 @@ function convertToZodSchemaProps(schema: any): Record<string, z.ZodTypeAny> {
   return result;
 }
 
+// Function to load settings from file path, environment variable, or use defaults
+function loadSettings(): BridgeSettings {
+  let settings: BridgeSettings = DEFAULT_SETTINGS;
+
+  // Check for command line argument --settings or --config
+  const args = process.argv.slice(2);
+  const settingsIndex = args.findIndex(arg => arg === '--settings' || arg === '--config');
+  
+  if (settingsIndex !== -1 && args[settingsIndex + 1]) {
+    const settingsPath = args[settingsIndex + 1];
+    try {
+      if (!fs.existsSync(settingsPath)) {
+        console.error(`Settings file not found: ${settingsPath}`);
+        process.exit(1);
+      }
+      
+      const settingsContent = fs.readFileSync(settingsPath, 'utf8');
+      const fileSettings = JSON.parse(settingsContent);
+      settings = { ...DEFAULT_SETTINGS, ...fileSettings };
+      console.log(`Loaded settings from file: ${path.resolve(settingsPath)}`);
+      console.log('Settings:', JSON.stringify(settings, null, 2));
+      return settings;
+    } catch (error) {
+      console.error(`Failed to load settings from ${settingsPath}:`, error);
+      process.exit(1);
+    }
+  }
+
+  // Fallback to environment variable
+  const settingsEnv = process.env.MCP_BRIDGE_SETTINGS;
+  if (settingsEnv) {
+    try {
+      settings = { ...DEFAULT_SETTINGS, ...JSON.parse(settingsEnv) };
+      console.log('Loaded settings from MCP_BRIDGE_SETTINGS environment variable');
+      console.log('Settings:', JSON.stringify(settings, null, 2));
+      return settings;
+    } catch (error) {
+      console.warn('Failed to parse MCP_BRIDGE_SETTINGS, using defaults:', error);
+    }
+  }
+
+  console.log('Using default settings (allow all actions)');
+  return settings;
+}
+
 async function main() {
+  // Load settings from file path, environment variable, or use defaults
+  const settings = loadSettings();
+
   // Initialize Moleculer broker with NATS transporter
   const broker = new ServiceBroker({
     nodeID: "mcp-bridge",
@@ -117,6 +204,13 @@ async function main() {
 
   // Get all actions from registry without endpoints
   const actionList = broker.registry.getActionList({ withEndpoints: false }) as unknown as ActionInfo[];
+  
+  // Filter actions based on allow patterns
+  const allowedActions = actionList.filter(action => 
+    isActionAllowed(action.name, settings.allow || ['*'])
+  );
+  
+  console.log(`Found ${actionList.length} total actions, ${allowedActions.length} allowed by settings`);
   
   // Build a mapping between MCP-compatible names and original Moleculer action names
   const nameMap: Record<string, string> = {};
@@ -177,15 +271,93 @@ async function main() {
   // Extract schemas and create name mapping
   const actionSchemaShapes: Record<string, Record<string, z.ZodTypeAny>> = {};
   const requiredKeysMap: Record<string, string[]> = {};
+  const toolDescriptions: Record<string, string> = {};
+  const paramOverrides: Record<string, Record<string, any>> = {};
   
-  actionList.forEach(action => {
+  // First, process custom tools from settings
+  if (settings.tools) {
+    settings.tools.forEach(customTool => {
+      // Find the action in the allowed actions list
+      const action = allowedActions.find(a => a.name === customTool.action);
+      if (action) {
+        const safeName = customTool.name.replace(/[^A-Za-z0-9_]/g, "_").toLowerCase();
+        
+        // Ensure uniqueness
+        let finalName = safeName;
+        let counter = 1;
+        while (nameMap[finalName]) {
+          finalName = `${safeName}_${counter++}`;
+        }
+        
+        nameMap[finalName] = customTool.action;
+        toolDescriptions[finalName] = customTool.description;
+        usedSanitizedNames.add(finalName);
+        
+        // Store parameter overrides if provided
+        if (customTool.params) {
+          paramOverrides[finalName] = customTool.params;
+        }
+        
+        // Process schema for custom tool
+        const paramsSchema = action?.definition?.params || action.action?.params || {};
+        const zodSchemaProps = convertToZodSchemaProps(paramsSchema);
+        
+        // If there are parameter overrides, make those parameters optional in the schema
+        // since they will be filled automatically
+        if (customTool.params) {
+          for (const overrideKey of Object.keys(customTool.params)) {
+            if (zodSchemaProps[overrideKey]) {
+              zodSchemaProps[overrideKey] = zodSchemaProps[overrideKey].optional();
+            }
+          }
+        }
+        
+        actionSchemaShapes[finalName] = zodSchemaProps;
+        
+        // Process required keys (excluding overridden parameters)
+        const requiredKeys: string[] = [];
+        if (typeof paramsSchema === 'object' && paramsSchema !== null) {
+          for (const [key, propSchema] of Object.entries(paramsSchema)) {
+            if (key === '$$strict' || key === '$$async') continue;
+            
+            // Skip if this parameter is overridden
+            if (customTool.params && customTool.params.hasOwnProperty(key)) {
+              continue;
+            }
+            
+            const isRequired = typeof propSchema === 'object' && propSchema !== null 
+              ? !(propSchema.optional === true) 
+              : true;
+              
+            if (isRequired) {
+              requiredKeys.push(key);
+            }
+          }
+        }
+        requiredKeysMap[finalName] = requiredKeys;
+      } else {
+        console.warn(`Custom tool references non-existent or not allowed action: ${customTool.action}`);
+      }
+    });
+  }
+  
+  // Then process remaining allowed actions that don't have custom tools
+  allowedActions.forEach(action => {
     const originalName = action.name;
+    
+    // Skip if this action already has a custom tool
+    const hasCustomTool = settings.tools?.some(tool => tool.action === originalName);
+    if (hasCustomTool) {
+      return;
+    }
+    
     // Apply naming rules: if the name contains anything but ASCII letters, digits or underscores,
     // replace invalid runs with "_", lower-case, trim, and append a numeric suffix on collision
     const safeName = sanitizeActionName(originalName);
     
     // Build the name mapping
     nameMap[safeName] = originalName;
+    toolDescriptions[safeName] = generateToolDescription(originalName);
     
     // Extract the parameter schema from the action definition
     const paramsSchema = action?.definition?.params || action.action?.params || {};
@@ -225,7 +397,7 @@ async function main() {
       
       // Register each action as an MCP tool using appropriate name
       for (const [safeName, originalName] of Object.entries(nameMap)) {
-        const toolDescription = generateToolDescription(originalName);
+        const toolDescription = toolDescriptions[safeName] || generateToolDescription(originalName);
         const zodSchemaShape = actionSchemaShapes[safeName];
         
         // Register tool with simpler approach - remove structuredContent to avoid errors
@@ -235,9 +407,18 @@ async function main() {
           zodSchemaShape, 
           async (args) => {
             try {
+              // Merge user-provided args with parameter overrides
+              const finalArgs = { ...args };
+              
+              // Apply parameter overrides if they exist for this tool
+              if (paramOverrides[safeName]) {
+                Object.assign(finalArgs, paramOverrides[safeName]);
+                console.log(`Applied parameter overrides for '${safeName}':`, paramOverrides[safeName]);
+              }
+              
               // Forward request to Moleculer using the original action name
-              console.log(`MCP tool '${safeName}' calling action '${originalName}' with args:`, args);
-              const result = await broker.call(originalName, args);
+              console.log(`MCP tool '${safeName}' calling action '${originalName}' with args:`, finalArgs);
+              const result = await broker.call(originalName, finalArgs);
               
               // Only return content, no structuredContent to avoid the error
               return {
@@ -310,7 +491,8 @@ async function main() {
   app.listen(PORT, () => {
     console.log(`MCP server started on port ${PORT}`);
     console.log(`Endpoints: http://localhost:${PORT}/ and http://localhost:${PORT}/v1/mcp`);
-    console.log(`Exposed ${actionList.length} Moleculer actions as MCP tools`);
+    console.log(`Exposed ${Object.keys(nameMap).length} Moleculer actions as MCP tools`);
+    console.log(`Settings:`, JSON.stringify(settings, null, 2));
   });
 }
 

@@ -42,7 +42,24 @@ npm install
 # Build the TypeScript code
 npm run build
 
-# Start the server
+# Option 1: Start with default settings (allow all actions)
+npm start
+
+# Option 2: Start with example settings file
+npm run start:example
+
+# Option 3: Use command line arguments
+node dist/index.js --settings settings.example.json
+node dist/index.js --config my-custom-settings.json
+
+# Option 4: Use the convenient start script
+./start.sh --example                    # Use settings.example.json
+./start.sh --file my-settings.json     # Use custom settings file  
+./start.sh --env                       # Use MCP_BRIDGE_SETTINGS env variable
+./start.sh --default                   # Use default settings
+
+# Option 5: Environment variable (legacy support)
+export MCP_BRIDGE_SETTINGS=$(cat settings.example.json)
 npm start
 ```
 
@@ -62,6 +79,8 @@ docker run -p 3000:3000 moleculer-mcp
 
 ## 🛠️ Configuration
 
+### Basic Configuration
+
 The server is configured to connect to a NATS server for Moleculer service transport. You can modify this in the `src/index.ts` file:
 
 ```typescript
@@ -70,6 +89,117 @@ const broker = new ServiceBroker({
   transporter: "NATS", // Configure your transporter here
 });
 ```
+
+### Advanced Configuration with Settings
+
+You can configure the bridge behavior using:
+
+1. **Command line arguments** (recommended):
+   ```bash
+   node dist/index.js --settings settings.json
+   node dist/index.js --config my-config.json
+   ```
+
+2. **Environment variable** (legacy support):
+   ```bash
+   export MCP_BRIDGE_SETTINGS='{"allow":["*"]}'
+   ```
+
+This allows you to:
+
+- Control which Moleculer actions are exposed as MCP tools
+- Customize tool names and descriptions
+- Use wildcard patterns for bulk permissions
+
+#### Settings Format
+
+```json
+{
+  "allow": [
+    "*",           // Allow all actions (wildcard)
+    "posts.*",     // Allow any actions in 'posts' service
+    "users.list"   // Allow only the specific 'users.list' action
+  ],
+  "tools": [
+    {
+      "name": "user_list_custom_tool_name",
+      "action": "users.list", 
+      "description": "List all users in the system"
+    }
+  ]
+}
+```
+
+#### Configuration Options
+
+**`allow` Array**: Controls which Moleculer actions are exposed as MCP tools
+- `"*"` - Wildcard that allows all actions
+- `"service.*"` - Allows all actions within a specific service
+- `"service.action"` - Allows only a specific action
+
+**`tools` Array**: Defines custom tool names and descriptions
+- `name` - Custom name for the MCP tool (must match `/^[A-Za-z0-9_]{1,64}$/`)
+- `action` - The Moleculer action to call
+- `description` - Custom description for the tool
+- `params` - (Optional) Default parameter values that will be automatically applied to the action
+
+#### Parameter Overrides
+
+The `params` field in custom tools allows you to:
+- Set default values for action parameters
+- Hide complexity from AI agents by pre-configuring common parameters
+- Create specialized versions of generic actions
+- Override required parameters to make them optional for the MCP tool
+
+When a parameter is overridden:
+1. The overridden parameter becomes optional in the MCP tool schema
+2. The override value is automatically merged with user-provided arguments
+3. User-provided values take precedence over overrides (if the parameter is still exposed)
+
+#### Example Usage
+
+```bash
+# Set restrictive permissions with custom tool names and parameter overrides
+export MCP_BRIDGE_SETTINGS='{
+  "allow": ["users.list", "users.get", "posts.*"],
+  "tools": [
+    {
+      "name": "get_user_list",
+      "action": "users.list",
+      "description": "Retrieve a list of all registered users"
+    },
+    {
+      "name": "get_user_details", 
+      "action": "users.get",
+      "description": "Get detailed information about a specific user"
+    },
+    {
+      "name": "get_featured_posts",
+      "action": "posts.list",
+      "description": "Get only featured blog posts",
+      "params": {
+        "featured": true,
+        "status": "published",
+        "limit": 20
+      }
+    },
+    {
+      "name": "get_users_paginated",
+      "action": "users.list", 
+      "description": "Get users with default pagination",
+      "params": {
+        "limit": 10,
+        "offset": 0,
+        "sort": "created_at"
+      }
+    }
+  ]
+}'
+
+npm start
+```
+
+If no `MCP_BRIDGE_SETTINGS` is provided, the bridge defaults to allowing all actions (`["*"]`) with auto-generated tool names and descriptions.
 
 ## 🔍 How It Works
 
