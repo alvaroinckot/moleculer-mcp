@@ -1,0 +1,85 @@
+import { ServiceBroker } from "moleculer";
+import { ActionSchema } from "moleculer";
+import { BridgeOptions } from "../config/BridgeOptions";
+
+export interface ActionInfo {
+  name: string;
+  action?: ActionSchema;
+  definition?: {
+    params?: Record<string, any>;
+  };
+}
+
+export class BridgeError extends Error {
+  constructor(message: string, public readonly code?: string) {
+    super(message);
+    this.name = 'BridgeError';
+  }
+}
+
+export class BridgeBroker {
+  private broker: ServiceBroker;
+  private isStarted = false;
+
+  constructor(private readonly options: BridgeOptions) {
+    this.broker = new ServiceBroker({
+      nodeID: options.broker.nodeID,
+      transporter: options.broker.transporter,
+      logLevel: options.broker.logLevel as any, // Type assertion for compatibility
+    });
+  }
+
+  async start(): Promise<void> {
+    if (this.isStarted) {
+      throw new BridgeError('Broker is already started');
+    }
+
+    try {
+      await this.broker.start();
+      
+      // Wait for service discovery
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      
+      this.isStarted = true;
+    } catch (error) {
+      throw new BridgeError(`Failed to start broker: ${error}`);
+    }
+  }
+
+  async stop(): Promise<void> {
+    if (!this.isStarted) {
+      return;
+    }
+
+    try {
+      await this.broker.stop();
+      this.isStarted = false;
+    } catch (error) {
+      throw new BridgeError(`Failed to stop broker: ${error}`);
+    }
+  }
+
+  listActions(): ActionInfo[] {
+    if (!this.isStarted) {
+      throw new BridgeError('Broker is not started');
+    }
+
+    return this.broker.registry.getActionList({ withEndpoints: false }) as unknown as ActionInfo[];
+  }
+
+  async call(actionName: string, params: any): Promise<any> {
+    if (!this.isStarted) {
+      throw new BridgeError('Broker is not started');
+    }
+
+    try {
+      return await this.broker.call(actionName, params);
+    } catch (error) {
+      throw new BridgeError(`Failed to call action ${actionName}: ${error}`);
+    }
+  }
+
+  get isRunning(): boolean {
+    return this.isStarted;
+  }
+}
