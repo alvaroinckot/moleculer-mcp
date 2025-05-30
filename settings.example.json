@@ -8,7 +8,7 @@
         "nodeID": "mcp-bridge",
         "transporter": "NATS",
         "logLevel": "info",
-        "configFile": "./moleculer.config.js"
+        "configFile": "./moleculer.config.example.js"
     },
     "server": {
         "port": 3000,
