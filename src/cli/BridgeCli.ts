@@ -22,7 +22,8 @@ export class BridgeCli {
     this.program
       .command('start')
       .description('Start the MCP bridge server')
-      .argument('[config]', 'Configuration file path')
+      .argument('[config]', 'MCP Bridge configuration file path')
+      .option('-m, --moleculer-config <path>', 'Moleculer configuration file path (moleculer.config.js)')
       .action(this.handleStart.bind(this));
 
     this.program
@@ -34,17 +35,39 @@ export class BridgeCli {
     this.program
       .command('list-actions')
       .description('List available Moleculer actions')
-      .option('-c, --config [config]', 'Configuration file path')
+      .option('-c, --config [config]', 'MCP Bridge configuration file path')
+      .option('-m, --moleculer-config <path>', 'Moleculer configuration file path (moleculer.config.js)')
       .action(this.handleListActions.bind(this));
   }
 
-  private async handleStart(configPath?: string): Promise<void> {
+  private async handleStart(configPath?: string, options?: { moleculerConfig?: string }): Promise<void> {
     try {
       console.log('Starting MCP Bridge...');
       
-      const options = BridgeOptions.load(configPath);
-      const broker = new BridgeBroker(options);
-      const gateway = new McpGateway(options, broker);
+      let bridgeOptions = BridgeOptions.load(configPath);
+      
+      // If moleculer config is specified via CLI, override the broker config
+      if (options?.moleculerConfig) {
+        const currentOptions = {
+          allow: [...bridgeOptions.allow],
+          tools: [...bridgeOptions.tools],
+          broker: {
+            nodeID: bridgeOptions.broker.nodeID,
+            transporter: bridgeOptions.broker.transporter,
+            logLevel: bridgeOptions.broker.logLevel,
+            configFile: options.moleculerConfig
+          },
+          server: {
+            port: bridgeOptions.server.port,
+            name: bridgeOptions.server.name,
+            version: bridgeOptions.server.version
+          }
+        };
+        bridgeOptions = new BridgeOptions(currentOptions);
+      }
+      
+      const broker = new BridgeBroker(bridgeOptions);
+      const gateway = new McpGateway(bridgeOptions, broker);
 
       // Setup graceful shutdown
       const shutdown = async (signal: string) => {
@@ -94,11 +117,32 @@ export class BridgeCli {
     }
   }
 
-  private async handleListActions(options: { config?: string }): Promise<void> {
+  private async handleListActions(options: { config?: string; moleculerConfig?: string }): Promise<void> {
     let broker: BridgeBroker | null = null;
     
     try {
-      const bridgeOptions = BridgeOptions.load(options.config);
+      let bridgeOptions = BridgeOptions.load(options.config);
+      
+      // If moleculer config is specified via CLI, override the broker config
+      if (options.moleculerConfig) {
+        const currentOptions = {
+          allow: [...bridgeOptions.allow],
+          tools: [...bridgeOptions.tools],
+          broker: {
+            nodeID: bridgeOptions.broker.nodeID,
+            transporter: bridgeOptions.broker.transporter,
+            logLevel: bridgeOptions.broker.logLevel,
+            configFile: options.moleculerConfig
+          },
+          server: {
+            port: bridgeOptions.server.port,
+            name: bridgeOptions.server.name,
+            version: bridgeOptions.server.version
+          }
+        };
+        bridgeOptions = new BridgeOptions(currentOptions);
+      }
+      
       broker = new BridgeBroker(bridgeOptions);
       
       console.log('Starting broker to discover actions...');

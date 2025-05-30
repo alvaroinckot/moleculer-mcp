@@ -4,6 +4,17 @@
         "posts.*",
         "users.list"
     ],
+    "broker": {
+        "nodeID": "mcp-bridge",
+        "transporter": "NATS",
+        "logLevel": "info",
+        "configFile": "./moleculer.config.js"
+    },
+    "server": {
+        "port": 3000,
+        "name": "Moleculer-MCP-Bridge",
+        "version": "1.0.0"
+    },
     "tools": [
         {
             "name": "get_node_actions",

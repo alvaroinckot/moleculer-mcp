@@ -16,6 +16,7 @@ export interface Options {
     nodeID?: string;
     transporter?: string;
     logLevel?: string;
+    configFile?: string;
   };
   server?: {
     port?: number;
@@ -38,6 +39,7 @@ const OptionsSchema = z.object({
     nodeID: z.string().optional(),
     transporter: z.string().optional(),
     logLevel: z.string().optional(),
+    configFile: z.string().optional(),
   }).optional(),
   server: z.object({
     port: z.number().optional(),
@@ -70,6 +72,7 @@ export class BridgeOptions {
     readonly nodeID: string;
     readonly transporter: string;
     readonly logLevel: string;
+    readonly configFile?: string;
   };
   private readonly _server: {
     readonly port: number;
@@ -99,6 +102,7 @@ export class BridgeOptions {
       nodeID: validated.broker?.nodeID ?? DEFAULTS.broker.nodeID,
       transporter: validated.broker?.transporter ?? DEFAULTS.broker.transporter,
       logLevel: validated.broker?.logLevel ?? DEFAULTS.broker.logLevel,
+      ...(validated.broker?.configFile && { configFile: validated.broker.configFile }),
     });
     this._server = Object.freeze({
       port: validated.server?.port ?? DEFAULTS.server.port,
@@ -152,6 +156,7 @@ export class BridgeOptions {
     readonly nodeID: string;
     readonly transporter: string;
     readonly logLevel: string;
+    readonly configFile?: string;
   } {
     return this._broker;
   }
