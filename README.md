@@ -1,4 +1,4 @@
-# moleculer-mcp
+# Moleculer MCP Bridge
 
 > A Model Context Protocol (MCP) server that exposes [Moleculer.js](https://github.com/moleculerjs/moleculer) actions as AI tools.
 
@@ -8,237 +8,146 @@
 
 Moleculer-MCP acts as a bridge between the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction) and [Moleculer.js](https://github.com/moleculerjs/moleculer) microservices. It automatically exposes all your Moleculer service actions as MCP tools, enabling AI agents to seamlessly interact with your Moleculer services.
 
-### Key Features
-
-- **Automatic Conversion**: Transforms Moleculer service actions into MCP-compatible tools
-- **Schema Mapping**: Automatically converts Moleculer's validation schemas to Zod schemas for MCP
-- **Real-time Discovery**: Dynamically discovers and exposes all available Moleculer actions
-- **Express Integration**: Uses Express.js for HTTP transport
-- **NATS Transport**: Uses NATS for Moleculer service communication (configurable)
-- **Dockerized**: Ready for containerized deployment
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Node.js 18 or later
-- NATS server (for Moleculer transport)
-- Moleculer services to expose
+## 🚀 Quick Start
 
 ### Installation
 
 ```bash
-# Clone this repository
-git clone https://github.com/alvaroinckot/moleculer-mcp.git
-cd moleculer-mcp
-
-# Install dependencies
-npm install
+npm install -g moleculer-mcp-bridge
 ```
 
-### Running Locally
+### Basic Usage
 
-```bash
-# Build the TypeScript code
-npm run build
-
-# Option 1: Start with default settings (allow all actions)
-npm start
-
-# Option 2: Start with example settings file
-npm run start:example
-
-# Option 3: Use command line arguments
-node dist/index.js --settings settings.example.json
-node dist/index.js --config my-custom-settings.json
-
-# Option 4: Use the convenient start script
-./start.sh --example                    # Use settings.example.json
-./start.sh --file my-settings.json     # Use custom settings file  
-./start.sh --env                       # Use MCP_BRIDGE_SETTINGS env variable
-./start.sh --default                   # Use default settings
-
-# Option 5: Environment variable (legacy support)
-export MCP_BRIDGE_SETTINGS=$(cat settings.example.json)
-npm start
-```
-
-The server will start on port 3000 by default and expose endpoints at:
-- http://localhost:3000/ 
-- http://localhost:3000/v1/mcp
-
-### Docker Deployment
-
-```bash
-# Build the Docker image
-docker build -t moleculer-mcp .
-
-# Run the container
-docker run -p 3000:3000 moleculer-mcp
-```
-
-## 🛠️ Configuration
-
-### Basic Configuration
-
-The server is configured to connect to a NATS server for Moleculer service transport. You can modify this in the `src/index.ts` file:
-
-```typescript
-const broker = new ServiceBroker({
-  nodeID: "mcp-bridge",
-  transporter: "NATS", // Configure your transporter here
-});
-```
-
-### Advanced Configuration with Settings
-
-You can configure the bridge behavior using:
-
-1. **Command line arguments** (recommended):
+1. **Start with default settings** (connects to local NATS and exposes all actions):
    ```bash
-   node dist/index.js --settings settings.json
-   node dist/index.js --config my-config.json
+   moleculer-mcp start
    ```
 
-2. **Environment variable** (legacy support):
+2. **Use your existing Moleculer configuration**:
    ```bash
-   export MCP_BRIDGE_SETTINGS='{"allow":["*"]}'
+   moleculer-mcp start -m ./moleculer.config.js
    ```
 
-This allows you to:
+3. **Use a custom bridge configuration**:
+   ```bash
+   moleculer-mcp start config.json
+   ```
 
-- Control which Moleculer actions are exposed as MCP tools
-- Customize tool names and descriptions
-- Use wildcard patterns for bulk permissions
+4. **Combine both configurations**:
+   ```bash
+   moleculer-mcp start config.json -m ./moleculer.config.js
+   ```
 
-#### Settings Format
+### Configuration
+
+Create a `config.json` file to customize the bridge behavior:
 
 ```json
 {
-  "allow": [
-    "*",           // Allow all actions (wildcard)
-    "posts.*",     // Allow any actions in 'posts' service
-    "users.list"   // Allow only the specific 'users.list' action
-  ],
+  "allow": ["users.*", "posts.*", "$node.health"],
+  "server": {
+    "port": 3000
+  },
   "tools": [
     {
-      "name": "user_list_custom_tool_name",
-      "action": "users.list", 
-      "description": "List all users in the system"
+      "name": "get_user_list",
+      "action": "users.list",
+      "description": "Get paginated list of users",
+      "params": { "limit": 50 }
     }
   ]
 }
 ```
 
-#### Configuration Options
+**Configuration Options:**
+- `allow`: Array of action patterns to expose (supports wildcards like `"users.*"`)
+- `server.port`: Port for the MCP server (default: 3000)
+- `broker.configFile`: Path to your Moleculer config file
+- `tools`: Custom tool definitions with parameter overrides
 
-**`allow` Array**: Controls which Moleculer actions are exposed as MCP tools
-- `"*"` - Wildcard that allows all actions
-- `"service.*"` - Allows all actions within a specific service
-- `"service.action"` - Allows only a specific action
-
-**`tools` Array**: Defines custom tool names and descriptions
-- `name` - Custom name for the MCP tool (must match `/^[A-Za-z0-9_]{1,64}$/`)
-- `action` - The Moleculer action to call
-- `description` - Custom description for the tool
-- `params` - (Optional) Default parameter values that will be automatically applied to the action
-
-#### Parameter Overrides
-
-The `params` field in custom tools allows you to:
-- Set default values for action parameters
-- Hide complexity from AI agents by pre-configuring common parameters
-- Create specialized versions of generic actions
-- Override required parameters to make them optional for the MCP tool
-
-When a parameter is overridden:
-1. The overridden parameter becomes optional in the MCP tool schema
-2. The override value is automatically merged with user-provided arguments
-3. User-provided values take precedence over overrides (if the parameter is still exposed)
-
-#### Example Usage
+### CLI Commands
 
 ```bash
-# Set restrictive permissions with custom tool names and parameter overrides
-export MCP_BRIDGE_SETTINGS='{
-  "allow": ["users.list", "users.get", "posts.*"],
-  "tools": [
-    {
-      "name": "get_user_list",
-      "action": "users.list",
-      "description": "Retrieve a list of all registered users"
-    },
-    {
-      "name": "get_user_details", 
-      "action": "users.get",
-      "description": "Get detailed information about a specific user"
-    },
-    {
-      "name": "get_featured_posts",
-      "action": "posts.list",
-      "description": "Get only featured blog posts",
-      "params": {
-        "featured": true,
-        "status": "published",
-        "limit": 20
-      }
-    },
-    {
-      "name": "get_users_paginated",
-      "action": "users.list", 
-      "description": "Get users with default pagination",
-      "params": {
-        "limit": 10,
-        "offset": 0,
-        "sort": "created_at"
+# Start the bridge
+moleculer-mcp start [config.json] [-m moleculer.config.js]
+
+# List available actions
+moleculer-mcp list-actions [-c config.json] [-m moleculer.config.js]
+
+# Validate configuration
+moleculer-mcp validate-config config.json
+```
+
+### Integration with AI Clients
+
+Once running, your Moleculer actions are available at:
+- `http://localhost:3000/` (MCP endpoint)
+- `http://localhost:3000/v1/mcp` (Alternative endpoint)
+
+Configure your AI client (Claude Desktop, etc.) to use this endpoint as an MCP server.
+
+## 📚 Example
+
+If you have a Moleculer service like this:
+
+```javascript
+// user.service.js
+module.exports = {
+  name: "users",
+  actions: {
+    list: {
+      params: { limit: "number", offset: "number" },
+      handler(ctx) {
+        return this.getUsers(ctx.params);
       }
     }
-  ]
-}'
-
-npm start
+  }
+};
 ```
 
-If no `MCP_BRIDGE_SETTINGS` is provided, the bridge defaults to allowing all actions (`["*"]`) with auto-generated tool names and descriptions.
+The bridge automatically exposes it as an MCP tool that AI agents can call:
 
-## 🔍 How It Works
-
-1. The server starts a Moleculer broker and connects to the NATS transporter
-2. It discovers all available Moleculer service actions
-3. Each action is converted to an MCP-compatible tool:
-   - Action names are sanitized to match MCP naming requirements
-   - Parameter schemas are converted from Moleculer format to Zod schemas
-   - Tool descriptions are generated automatically from action names
-4. The server exposes an MCP-compatible endpoint that AI agents can communicate with
-5. When an AI calls a tool, the request is forwarded to the corresponding Moleculer action
-
-## 📦 Project Structure
-
-```
-moleculer-mcp/
-├── src/
-│   └── index.ts       # Main application code
-├── Dockerfile         # Docker configuration
-├── package.json       # Project dependencies
-├── tsconfig.json      # TypeScript configuration
-└── README.md          # Project documentation
+```json
+{
+  "name": "users_list",
+  "description": "List operation for the users service",
+  "parameters": {
+    "limit": { "type": "number" },
+    "offset": { "type": "number" }
+  }
+}
 ```
 
-## ⚙️ API
+## 🔧 Advanced Usage
 
-### MCP Endpoint
+### Using with Docker
 
-The MCP server is exposed at `http://localhost:3000/` and `http://localhost:3000/v1/mcp`.
+```dockerfile
+FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+EXPOSE 3000
+CMD ["moleculer-mcp", "start", "config.json"]
+```
 
-### Tool Generation
+### Environment Variables
 
-Moleculer actions are exposed as MCP tools with the following transformations:
+Set configuration via environment variable:
+```bash
+export MCP_BRIDGE_SETTINGS='{"allow":["*"],"server":{"port":3000}}'
+moleculer-mcp start
+```
 
-- Action names are sanitized to match `/^[A-Za-z0-9_]{1,64}$/`
-- Service-specific naming patterns are preserved (e.g., `$node.health` becomes `f1e__node_health`)
-- Parameter schemas are converted to Zod schemas
-- Required parameters are preserved
+## 📖 Documentation
+
+For detailed documentation, API reference, and advanced configuration options, visit our [documentation site](https://github.com/alvaroinckot/moleculer-mcp).
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
