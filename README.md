@@ -20,22 +20,22 @@ npm install -g moleculer-mcp-bridge
 
 1. **Start with default settings** (connects to local NATS and exposes all actions):
    ```bash
-   bridge-cli start
+   moleculer-mcp start
    ```
 
 2. **Use your existing Moleculer configuration**:
    ```bash
-   bridge-cli start -m ./moleculer.config.js
+   moleculer-mcp start -m ./moleculer.config.js
    ```
 
 3. **Use a custom bridge configuration**:
    ```bash
-   bridge-cli start config.json
+   moleculer-mcp start config.json
    ```
 
 4. **Combine both configurations**:
    ```bash
-   bridge-cli start config.json -m ./moleculer.config.js
+   moleculer-mcp start config.json -m ./moleculer.config.js
    ```
 
 ### Configuration
@@ -69,13 +69,13 @@ Create a `config.json` file to customize the bridge behavior:
 
 ```bash
 # Start the bridge
-bridge-cli start [config.json] [-m moleculer.config.js]
+moleculer-mcp start [config.json] [-m moleculer.config.js]
 
 # List available actions
-bridge-cli list-actions [-c config.json] [-m moleculer.config.js]
+moleculer-mcp list-actions [-c config.json] [-m moleculer.config.js]
 
 # Validate configuration
-bridge-cli validate-config config.json
+moleculer-mcp validate-config config.json
 ```
 
 ### Integration with AI Clients
@@ -129,7 +129,7 @@ COPY package*.json ./
 RUN npm install
 COPY . .
 EXPOSE 3000
-CMD ["bridge-cli", "start", "config.json"]
+CMD ["moleculer-mcp", "start", "config.json"]
 ```
 
 ### Environment Variables
@@ -137,7 +137,7 @@ CMD ["bridge-cli", "start", "config.json"]
 Set configuration via environment variable:
 ```bash
 export MCP_BRIDGE_SETTINGS='{"allow":["*"],"server":{"port":3000}}'
-bridge-cli start
+moleculer-mcp start
 ```
 
 ## 📖 Documentation

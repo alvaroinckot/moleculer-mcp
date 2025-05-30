@@ -12,7 +12,7 @@
     }
   },
   "bin": {
-    "bridge-cli": "./dist/cjs/cli/index.js"
+    "moleculer-mcp": "./dist/cjs/cli/index.js"
   },
   "scripts": {
     "build": "npm run build:clean && npm run build:cjs && npm run build:esm && npm run build:types",

@@ -15,7 +15,7 @@ export class BridgeCli {
 
   private setupCommands(): void {
     this.program
-      .name('bridge-cli')
+      .name('moleculer-mcp')
       .description('Moleculer MCP Bridge CLI')
       .version('1.0.0');
 
