@@ -18,7 +18,7 @@ export const McpBridgeService: ServiceSchema = {
       },
       server: {
         port: 3000,
-        name: "Moleculer-MCP-Bridge",
+        name: "Moleculer-MCP",
         version: "1.0.0",
       },
     }

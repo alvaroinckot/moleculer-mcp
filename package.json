@@ -1,5 +1,5 @@
 {
-  "name": "moleculer-mcp-bridge",
+  "name": "moleculer-mcp",
   "version": "1.0.0",
   "description": "A TypeScript library that bridges Moleculer.js actions to Model Context Protocol (MCP) tools",
   "main": "dist/cjs/index.js",

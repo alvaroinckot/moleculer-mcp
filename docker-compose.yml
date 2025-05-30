@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  moleculer-mcp:
+    build: .
+    ports:
+      - "${HOST_PORT:-3000}:${CONTAINER_PORT:-3000}"
+    environment:
+      - PORT=${CONTAINER_PORT:-3000}
+      - SETTINGS_FILE=${SETTINGS_FILE:-}
+    volumes:
+      # Mount custom configuration files if needed
+      - ./moleculer.config.js:/app/moleculer.config.js:ro
+      - ./settings.json:/app/settings.json:ro
+      # Uncomment to use custom settings file
+      # - ./my-settings.json:/app/my-settings.json:ro
+    networks:
+      - moleculer-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "const http = require('http'); const options = { host: 'localhost', port: process.env.PORT || 3000, timeout: 2000 }; const healthCheck = http.request(options, (res) => { if (res.statusCode === 200) process.exit(0); else process.exit(1); }); healthCheck.on('error', () => process.exit(1)); healthCheck.end();"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Example NATS server (if using NATS transporter)
+  nats:
+    image: nats:latest
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    command: ["-js", "-m", "8222"]
+    networks:
+      - moleculer-network
+
+networks:
+  moleculer-network:
+    driver: bridge
+
+# Example usage:
+# 1. Default configuration (port 3000):
+#    docker-compose up
+#
+# 2. Custom port:
+#    HOST_PORT=8080 CONTAINER_PORT=8080 docker-compose up
+#
+# 3. Custom settings file:
+#    SETTINGS_FILE=/app/my-settings.json docker-compose up
+#
+# 4. Build and run with custom port and settings:
+#    HOST_PORT=8080 CONTAINER_PORT=8080 SETTINGS_FILE=/app/my-settings.json docker-compose up --build

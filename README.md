@@ -13,7 +13,7 @@ Moleculer-MCP acts as a bridge between the [Model Context Protocol (MCP)](https:
 ### Installation
 
 ```bash
-npm install -g moleculer-mcp-bridge
+npm install -g moleculer-mcp
 ```
 
 ### Basic Usage
@@ -122,14 +122,57 @@ The bridge automatically exposes it as an MCP tool that AI agents can call:
 
 ### Using with Docker
 
-```dockerfile
-FROM node:18-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm install
-COPY . .
-EXPOSE 3000
-CMD ["moleculer-mcp", "start", "config.json"]
+The project includes a production-ready Dockerfile with the latest Node.js LTS version, configurable ports, and support for custom configuration files.
+
+#### Quick Start with Docker
+
+```bash
+# Build the image
+docker build -t moleculer-mcp .
+
+# Run with default settings (port 3000)
+docker run -p 3000:3000 moleculer-mcp
+
+# Run with custom port
+docker run -p 8080:8080 -e PORT=8080 moleculer-mcp
+
+# Run with custom settings file
+docker run -p 3000:3000 \
+  -v $(pwd)/my-settings.json:/app/my-settings.json \
+  -e SETTINGS_FILE=/app/my-settings.json \
+  moleculer-mcp
+```
+
+#### Using Docker Compose
+
+```bash
+# Copy the example environment file
+cp .env.example .env
+
+# Start with default configuration
+docker-compose up
+
+# Start with custom port (edit .env or use environment variables)
+HOST_PORT=8080 CONTAINER_PORT=8080 docker-compose up
+
+# Start with custom settings file
+SETTINGS_FILE=/app/my-settings.json docker-compose up
+```
+
+#### Docker Environment Variables
+
+- `PORT`: Port inside the container (default: 3000)
+- `SETTINGS_FILE`: Path to custom settings file inside container (optional)
+
+#### Volume Mounts
+
+You can mount your configuration files:
+
+```bash
+docker run -p 3000:3000 \
+  -v $(pwd)/moleculer.config.js:/app/moleculer.config.js:ro \
+  -v $(pwd)/settings.json:/app/settings.json:ro \
+  moleculer-mcp
 ```
 
 ### Environment Variables
