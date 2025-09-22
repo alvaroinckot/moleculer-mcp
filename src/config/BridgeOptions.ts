@@ -1,6 +1,5 @@
 import { z } from "zod";
 import * as fs from "fs";
-import * as path from "path";
 
 export interface CustomTool {
   name: string;
@@ -32,26 +31,32 @@ const CustomToolSchema = z.object({
   params: z.record(z.any()).optional(),
 });
 
-const OptionsSchema = z.object({
-  allow: z.array(z.string()).optional(),
-  tools: z.array(CustomToolSchema).optional(),
-  broker: z.object({
-    nodeID: z.string().optional(),
-    transporter: z.string().optional(),
-    logLevel: z.string().optional(),
-    configFile: z.string().optional(),
-  }).optional(),
-  server: z.object({
-    port: z.number().optional(),
-    name: z.string().optional(),
-    version: z.string().optional(),
-  }).optional(),
-}).strict();
+const OptionsSchema = z
+  .object({
+    allow: z.array(z.string()).optional(),
+    tools: z.array(CustomToolSchema).optional(),
+    broker: z
+      .object({
+        nodeID: z.string().optional(),
+        transporter: z.string().optional(),
+        logLevel: z.string().optional(),
+        configFile: z.string().optional(),
+      })
+      .optional(),
+    server: z
+      .object({
+        port: z.number().optional(),
+        name: z.string().optional(),
+        version: z.string().optional(),
+      })
+      .optional(),
+  })
+  .strict();
 
 type ValidatedOptions = z.infer<typeof OptionsSchema>;
 
 export const DEFAULTS = {
-  allow: ['*'] as const,
+  allow: ["*"] as const,
   tools: [] as const,
   broker: {
     nodeID: "mcp-bridge",
@@ -83,9 +88,9 @@ export class BridgeOptions {
   constructor(options: Options) {
     const validated = OptionsSchema.parse(options);
     this._allow = Object.freeze([...(validated.allow ?? DEFAULTS.allow)]);
-    
+
     // Handle tools with proper type mapping
-    const mappedTools: CustomTool[] = (validated.tools ?? DEFAULTS.tools).map(tool => {
+    const mappedTools: CustomTool[] = (validated.tools ?? DEFAULTS.tools).map((tool) => {
       const mappedTool: CustomTool = {
         name: tool.name,
         action: tool.action,
@@ -97,7 +102,7 @@ export class BridgeOptions {
       return mappedTool;
     });
     this._tools = Object.freeze(mappedTools);
-    
+
     this._broker = Object.freeze({
       nodeID: validated.broker?.nodeID ?? DEFAULTS.broker.nodeID,
       transporter: validated.broker?.transporter ?? DEFAULTS.broker.transporter,
@@ -118,9 +123,9 @@ export class BridgeOptions {
       if (!fs.existsSync(configPath)) {
         throw new Error(`Configuration file not found: ${configPath}`);
       }
-      
+
       try {
-        const content = fs.readFileSync(configPath, 'utf8');
+        const content = fs.readFileSync(configPath, "utf8");
         options = JSON.parse(content) as Options;
       } catch (error) {
         throw new Error(`Failed to parse configuration file: ${error}`);

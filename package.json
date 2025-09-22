@@ -1,6 +1,6 @@
 {
   "name": "moleculer-mcp",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "A TypeScript library that bridges Moleculer.js actions to Model Context Protocol (MCP) tools",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
@@ -24,9 +24,16 @@
     "start:example": "node dist/cjs/bootstrap.js --settings settings.example.json",
     "cli": "node dist/cjs/cli/index.js",
     "test": "jest",
+    "test:ci": "jest --ci --coverage --watchAll=false",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
-    "format": "prettier --write src/**/*.ts"
+    "format": "prettier --write src/**/*.ts",
+    "format:check": "prettier --check src/**/*.ts",
+    "prepublishOnly": "npm run test:ci && npm run lint && npm run format:check && npm run build",
+    "release:patch": "npm version patch && npm publish",
+    "release:minor": "npm version minor && npm publish", 
+    "release:major": "npm version major && npm publish",
+    "release:dry": "npm publish --dry-run"
   },
   "keywords": [
     "moleculer",
@@ -36,8 +43,27 @@
     "typescript",
     "microservices"
   ],
-  "author": "",
+  "author": "alvaroinckot",
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alvaroinckot/moleculer-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/alvaroinckot/moleculer-mcp/issues"
+  },
+  "homepage": "https://github.com/alvaroinckot/moleculer-mcp#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "devDependencies": {
     "@types/express": "^4.17.21",
     "@types/jest": "^29.5.14",

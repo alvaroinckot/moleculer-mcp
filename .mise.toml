@@ -39,3 +39,23 @@ run = "npm run start:example"
 [tasks.clean]
 description = "Clean build artifacts"
 run = "npm run build:clean"
+
+[tasks.release-patch]
+description = "Release a patch version"
+run = "npm run release:patch"
+
+[tasks.release-minor]
+description = "Release a minor version"  
+run = "npm run release:minor"
+
+[tasks.release-major]
+description = "Release a major version"
+run = "npm run release:major"
+
+[tasks.release-dry]
+description = "Dry run publish to test package"
+run = "npm run release:dry"
+
+[tasks.publish-check]
+description = "Check if package is ready for publishing"
+run = "npm run prepublishOnly"

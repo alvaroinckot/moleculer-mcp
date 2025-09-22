@@ -5,11 +5,11 @@ import { McpGateway } from "../mcp/McpGateway";
 
 export const McpBridgeService: ServiceSchema = {
   name: "mcp-bridge",
-  
+
   settings: {
     // Default settings - can be overridden when creating the service
     bridge: {
-      allow: ['*'],
+      allow: ["*"],
       tools: [],
       broker: {
         nodeID: "mcp-bridge",
@@ -21,7 +21,7 @@ export const McpBridgeService: ServiceSchema = {
         name: "Moleculer-MCP",
         version: "1.0.0",
       },
-    }
+    },
   },
 
   created() {
@@ -70,7 +70,7 @@ export const McpBridgeService: ServiceSchema = {
           gateway: this.mcpGateway?.isRunning || false,
           timestamp: new Date().toISOString(),
         };
-      }
+      },
     },
 
     // List available tools
@@ -80,14 +80,14 @@ export const McpBridgeService: ServiceSchema = {
         if (!this.bridgeBroker?.isRunning) {
           throw new Error("Bridge broker is not running");
         }
-        
+
         const catalogue = new (await import("../catalogue/ServiceCatalogue")).ServiceCatalogue(
-          this.bridgeBroker, 
+          this.bridgeBroker,
           this.bridgeOptions
         );
-        
+
         const tools = catalogue.getTools();
-        return Object.keys(tools).map(name => {
+        return Object.keys(tools).map((name) => {
           const tool = tools[name];
           if (!tool) {
             throw new Error(`Tool '${name}' not found`);
@@ -97,7 +97,7 @@ export const McpBridgeService: ServiceSchema = {
             description: tool.description,
           };
         });
-      }
+      },
     },
   },
 };

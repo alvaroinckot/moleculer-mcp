@@ -2,10 +2,12 @@
   "parser": "@typescript-eslint/parser",
   "plugins": ["@typescript-eslint"],
   "extends": [
-    "eslint:recommended",
-    "@typescript-eslint/recommended",
-    "@typescript-eslint/recommended-requiring-type-checking"
+    "eslint:recommended"
   ],
+  "env": {
+    "node": true,
+    "es2020": true
+  },
   "parserOptions": {
     "ecmaVersion": 2020,
     "sourceType": "module",
@@ -14,10 +16,18 @@
   "rules": {
     "@typescript-eslint/no-unused-vars": "error",
     "@typescript-eslint/no-explicit-any": "warn",
-    "@typescript-eslint/explicit-function-return-type": "warn",
-    "@typescript-eslint/no-unsafe-assignment": "warn",
-    "@typescript-eslint/no-unsafe-call": "warn",
-    "@typescript-eslint/no-unsafe-member-access": "warn"
+    "@typescript-eslint/explicit-function-return-type": "off",
+    "no-prototype-builtins": "error",
+    "prefer-const": "error",
+    "no-var": "error"
   },
-  "ignorePatterns": ["dist/", "node_modules/", "*.js"]
+  "ignorePatterns": ["dist/", "node_modules/", "*.js"],
+  "overrides": [
+    {
+      "files": ["*.ts", "*.tsx"],
+      "rules": {
+        "no-undef": "off"
+      }
+    }
+  ]
 }

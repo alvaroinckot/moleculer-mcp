@@ -13,9 +13,12 @@ export interface ActionInfo {
 }
 
 export class BridgeError extends Error {
-  constructor(message: string, public readonly code?: string) {
+  constructor(
+    message: string,
+    public readonly code?: string
+  ) {
     super(message);
-    this.name = 'BridgeError';
+    this.name = "BridgeError";
   }
 }
 
@@ -31,7 +34,7 @@ export class BridgeBroker {
     // If a Moleculer config file is specified, load it
     if (this.options.broker.configFile) {
       const configPath = path.resolve(this.options.broker.configFile);
-      
+
       if (!fs.existsSync(configPath)) {
         throw new BridgeError(`Moleculer config file not found: ${configPath}`);
       }
@@ -39,10 +42,10 @@ export class BridgeBroker {
       try {
         // Clear require cache to ensure fresh load
         delete require.cache[require.resolve(configPath)];
-        
+
         // Load the Moleculer config
         const moleculerConfig = require(configPath);
-        
+
         // Use the loaded config, but allow our options to override specific settings
         const brokerConfig = {
           ...moleculerConfig,
@@ -50,8 +53,8 @@ export class BridgeBroker {
           logLevel: this.options.broker.logLevel,
           // Only override transporter if it's not specified in the moleculer config
           ...(moleculerConfig.transporter === undefined && {
-            transporter: this.options.broker.transporter
-          })
+            transporter: this.options.broker.transporter,
+          }),
         };
 
         console.log(`Loading Moleculer broker with config from: ${configPath}`);
@@ -71,15 +74,15 @@ export class BridgeBroker {
 
   async start(): Promise<void> {
     if (this.isStarted) {
-      throw new BridgeError('Broker is already started');
+      throw new BridgeError("Broker is already started");
     }
 
     try {
       await this.broker.start();
-      
+
       // Wait for service discovery
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      
+
       this.isStarted = true;
     } catch (error) {
       throw new BridgeError(`Failed to start broker: ${error}`);
@@ -101,7 +104,7 @@ export class BridgeBroker {
 
   listActions(): ActionInfo[] {
     if (!this.isStarted) {
-      throw new BridgeError('Broker is not started');
+      throw new BridgeError("Broker is not started");
     }
 
     return this.broker.registry.getActionList({ withEndpoints: false }) as unknown as ActionInfo[];
@@ -109,7 +112,7 @@ export class BridgeBroker {
 
   async call(actionName: string, params: any): Promise<any> {
     if (!this.isStarted) {
-      throw new BridgeError('Broker is not started');
+      throw new BridgeError("Broker is not started");
     }
 
     try {

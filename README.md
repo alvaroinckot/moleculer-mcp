@@ -138,7 +138,7 @@ curl https://mise.jdx.dev/install.sh | sh
    ```bash
    git clone https://github.com/alvaroinckot/moleculer-mcp.git
    cd moleculer-mcp
-   mise install  # Installs Node.js 20.18.0
+   mise install  # Installs Node.js 22.19.0
    ```
 
 2. **Install dependencies**:
@@ -169,12 +169,19 @@ mise run clean        # Clean build artifacts
 # Example tasks
 mise run example      # Run with example configuration
 mise run cli          # Run CLI commands
+
+# Publishing tasks (maintainers)
+mise run release-patch    # Release patch version
+mise run release-minor    # Release minor version
+mise run release-major    # Release major version
+mise run release-dry      # Test publish without publishing
+mise run publish-check    # Verify package is ready for publishing
 ```
 
 ### Environment
 
 The project is configured to use:
-- **Node.js**: 20.18.0 (via `.tool-versions`)
+- **Node.js**: 22.19.0 (via `.tool-versions`)
 - **Environment**: Development mode by default
 - **TypeScript**: ES2020 target with strict settings
 
@@ -246,6 +253,48 @@ moleculer-mcp start
 ## 📖 Documentation
 
 For detailed documentation, API reference, and advanced configuration options, visit our [documentation site](https://github.com/alvaroinckot/moleculer-mcp).
+
+## 📦 Publishing (Maintainers)
+
+This project is set up for automated publishing to npm. Here's how to release new versions:
+
+### Manual Publishing
+
+```bash
+# Test the package before publishing
+mise run publish-check     # Runs tests, linting, formatting, and build
+mise run release-dry        # Dry run to see what would be published
+
+# Release new versions
+mise run release-patch      # 1.0.0 -> 1.0.1
+mise run release-minor      # 1.0.0 -> 1.1.0  
+mise run release-major      # 1.0.0 -> 2.0.0
+```
+
+### Automated Publishing
+
+1. **Create a release on GitHub**: This triggers the automated publish workflow
+2. **GitHub Actions**: Automatically builds, tests, and publishes to npm
+3. **NPM Token**: Make sure `NPM_TOKEN` is set in repository secrets
+
+### Publishing Checklist
+
+Before releasing:
+- [ ] All tests pass (`npm run test:ci`)
+- [ ] Code is properly linted (`npm run lint`) 
+- [ ] Code is properly formatted (`npm run format:check`)
+- [ ] Build succeeds (`npm run build`)
+- [ ] Version number is appropriate (patch/minor/major)
+- [ ] CHANGELOG is updated (if applicable)
+
+### Package Contents
+
+The published package includes:
+- `dist/` - Compiled JavaScript (CJS + ESM) and TypeScript definitions
+- `README.md` - Documentation
+- `LICENSE` - License file
+
+Development files are excluded via `.npmignore`.
 
 ## 🤝 Contributing
 
