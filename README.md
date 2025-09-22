@@ -40,7 +40,7 @@ npm install -g moleculer-mcp
 
 ### Configuration
 
-Create a `config.json` file to customize the bridge behavior:
+Create a `config.json` file to overwrite and customize the bridge behavior:
 
 ```json
 {
