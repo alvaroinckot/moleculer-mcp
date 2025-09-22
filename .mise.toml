@@ -1,0 +1,41 @@
+[tools]
+nodejs = "22.19.0"
+
+[env]
+NODE_ENV = "development"
+
+[tasks.install]
+description = "Install dependencies"
+run = "npm install"
+
+[tasks.build]
+description = "Build the project"
+run = "npm run build"
+
+[tasks.dev]
+description = "Start development server"
+run = "npm run start"
+
+[tasks.test]
+description = "Run tests"
+run = "npm test"
+
+[tasks.lint]
+description = "Run linter"
+run = "npm run lint"
+
+[tasks.format]
+description = "Format code"
+run = "npm run format"
+
+[tasks.cli]
+description = "Run CLI"
+run = "npm run cli"
+
+[tasks.example]
+description = "Run example configuration"
+run = "npm run start:example"
+
+[tasks.clean]
+description = "Clean build artifacts"
+run = "npm run build:clean"

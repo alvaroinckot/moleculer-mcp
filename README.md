@@ -118,7 +118,67 @@ The bridge automatically exposes it as an MCP tool that AI agents can call:
 }
 ```
 
-## 🔧 Advanced Usage
+## �️ Development
+
+### Prerequisites
+
+This project uses [mise](https://mise.jdx.dev/) for development environment management. Make sure you have mise installed:
+
+```bash
+# Install mise (macOS)
+brew install mise
+
+# Install mise (Linux/WSL)
+curl https://mise.jdx.dev/install.sh | sh
+```
+
+### Setup
+
+1. **Clone and setup the project**:
+   ```bash
+   git clone https://github.com/alvaroinckot/moleculer-mcp.git
+   cd moleculer-mcp
+   mise install  # Installs Node.js 20.18.0
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   mise run install
+   # or simply: npm install
+   ```
+
+3. **Build the project**:
+   ```bash
+   mise run build
+   # or: npm run build
+   ```
+
+### Available mise Tasks
+
+```bash
+# Development tasks
+mise run dev          # Start development server
+mise run test         # Run tests
+mise run lint         # Run linter
+mise run format       # Format code
+
+# Build tasks
+mise run build        # Build all targets
+mise run clean        # Clean build artifacts
+
+# Example tasks
+mise run example      # Run with example configuration
+mise run cli          # Run CLI commands
+```
+
+### Environment
+
+The project is configured to use:
+- **Node.js**: 20.18.0 (via `.tool-versions`)
+- **Environment**: Development mode by default
+- **TypeScript**: ES2020 target with strict settings
+
+## �🔧 Advanced Usage
 
 ### Using with Docker
 
